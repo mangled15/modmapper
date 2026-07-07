@@ -23,7 +23,7 @@ let json = JSON.parse(data);
  * scale?: [][]
  * }}} properties - Properties for the animation
  */
-function animateNote(beat, properties) {
+export function animateNote(beat, properties) {
     if (json.colorNotes.forEach(note => {
         if(note.b == beat) {
             note.customData = properties
@@ -46,7 +46,7 @@ function animateNote(beat, properties) {
  * scale?: [][]
  * }}} properties - Properties for the animation
  */
-function animateNoteInBetween(beat1, beat2, properties) {
+export function animateNoteInBetween(beat1, beat2, properties) {
     if (properties) {
         for (const note of json.colorNotes) {
             if (note.b >= beat1 && note.b <= beat2){
