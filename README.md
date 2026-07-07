@@ -4,17 +4,19 @@ A library I'm making to simplify making modcharts in beat saber.
 ---
 Template: 
 ```
-const diff = "ExpertPlusStandard.dat"
+import * as modmapper from 'modmapper'
+import fs from 'fs';
+const diff = "test.dat"
 
 let data = fs.readFileSync(diff, "utf-8");
 
 let json = JSON.parse(data);
 
-// VVV CODE VVV
+// VVV code VVV
 
 
 
-// ^^^ CODE ^^^
+// ^^^ code ^^^
 
 fs.writeFileSync(
     diff,
@@ -22,4 +24,4 @@ fs.writeFileSync(
 );
 ```
 
-Single diff supported atm
+Only single diff supported atm
