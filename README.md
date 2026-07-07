@@ -31,6 +31,8 @@ Only single diff supported atm
 Open VSCode in the directory of your map, then in a terminal window run `npm install github:mangled15/modmapper` and wait for it to install
 Then create a new file with a .js extension
 Paste the template and start coding :)
+If you get an error about some module you need to create a new file in the same directionary called `package.json` and paste the contents of modmapper's [package.json](https://github.com/mangled15/modmapper/blob/main/package.json)
+If you get any more errors or need help dm me but I have to set allis up which is going to take a while.
 
 Will add way more in the future(maybe)
 Wiki will also come
