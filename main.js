@@ -40,7 +40,3 @@ export function animateNoteInBetween(beat1, beat2, properties) {
         }
     }
 }
-fs.writeFileSync(
-    diff,
-    JSON.stringify(json, null, 4)
-);
