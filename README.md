@@ -7,7 +7,7 @@ Only single diff supported atm
 
 ---
 # How to use
-### Make sure you have [Node](https://nodejs.org/en/download) installed
+### Make sure you have [Node](https://nodejs.org/en/download) installed and you can run `npm -v` in the terminal
 
 - Open VSCode in the directory of your map, then in a terminal window run 
 ```bash
@@ -21,7 +21,7 @@ and wait for it to install.
 
 - Run the file by running: 
 ```bash
-node <*YOUR FILE NAME*.js>
+node <YOUR-FILE-NAME>.js
 ```
 in the terminal.
 
@@ -34,11 +34,8 @@ Will add way more in the future(maybe). Wiki will also come
 ---
 # Template: 
 ``` javascript
-import * as modmapper from 'modmapper'
-import fs from 'fs';
-const diff = "ExpertPlusStandard.dat" // Make sure this matches the name of the diff you want to mod EXACTLY
-let data = fs.readFileSync(diff, "utf-8"); // Reads what is in the .dat file
-let json = JSON.parse(data); // Make JSON out of it or sum idk
+import * as modmapper from "./main.js"
+await modmapper.setDifficulty("ExpertPlusStandard.dat") // Make sure this matches the name of the diff you want to mod EXACTLY
 
 // VVV code VVV
 
@@ -46,9 +43,6 @@ let json = JSON.parse(data); // Make JSON out of it or sum idk
 
 // ^^^ code ^^^
 
-// Writes the new JSON contents in the .dat file
-fs.writeFileSync(
-    diff,
-    JSON.stringify(json, null, 4)
-);
+// Make sure you run this function AFTER your code else it won't pick it up. And if you don't run this function then well it doesn't write any custom data (duhhh!)
+modmapper.writeToFile()
 ```
