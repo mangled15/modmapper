@@ -1,5 +1,58 @@
 // I GOT A LOT OF USEFUL INFORMATION FROM https://heck.aeroluna.dev/ THEY HELPED ME A TON!!!
 
+import fs from 'node:fs'
+
+const colors = {
+    reset: "\x1b[0m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    blue: "\x1b[34m",
+    magenta: "\x1b[35m",
+    cyan: "\x1b[36m",
+    bold: "\x1b[1m",
+};
+
+console.log(colors.green, "[OK] Started " + import.meta.filename, colors.reset)
+
+async function fileExists(path) {
+    try {
+        await fs.promises.access(path);
+        console.log(colors.green, `[OK] ${path} found!`, colors.reset)
+        return true;
+    } catch (err) {
+        console.log(colors.magenta, `[CRITICAL] VVV Wrong file name? File does not exist? VVV`, colors.reset)
+        console.error(err)
+        console.log(colors.magenta, `[CRITICAL] ^^^ Wrong file name? File does not exist? ^^^`, colors.reset)
+        return false;
+    }
+
+}
+
+let difficulty
+let data
+let diffJSON
+
+/**
+ * 
+ * @param {string} diff - Pass in the name of the difficulty you want to edit with modmapper 
+ */
+export async function setDifficulty(diff) {
+    difficulty = diff
+    const found = await fileExists(difficulty)
+    if (found) {
+        data = fs.readFileSync(difficulty, "utf-8")
+        diffJSON = JSON.parse(data)
+        diffJSON.customData = {}
+        diffJSON.customData.customEvents = []
+    }
+    else {
+        console.log(colors.magenta, `[CRITICAL] Could not find ${difficulty} in the current directonary`, colors.reset)
+        return;
+    }
+}
+
+// -----------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} noteAnimationProperties
  * @property {boolean} [spawnEffect] - Should the note have a spawn effect? Either true or false. Default = true
@@ -27,16 +80,15 @@
 
 /**
  * Animates a note | Recommended to use with a for loop
- * @param {any} diffJSON - JSON data of the difficulty
  * @param {number} beat - The beat the note is on that you want to animate
  * @param {noteAnimationProperties} properties - How should the note behave?
  */
-export function animateNote(diffJSON, beat, properties) {
+export function animateNote(beat, properties) {
     if (diffJSON.colorNotes.forEach(note => {
-        if(note.b == beat) {
+        if (note.b == beat) {
             note.customData = properties
         }
-        else{
+        else {
             console.log(`note on beat ${beat} not found`)
         }
     }));
@@ -44,15 +96,14 @@ export function animateNote(diffJSON, beat, properties) {
 
 /**
  * Animates a set of notes in between 2 beats(INCLUSIVE) using a for loop
- * @param {any} diffJSON - JSON data of the difficulty
  * @param {number} beat1 - The start beat
  * @param {number} beat2 - The end beat
  * @param {noteAnimationProperties} properties - How should the note behave?
  */
-export function animateNoteInBetween(diffJSON, beat1, beat2, properties) {
+export function animateNoteInBetween(beat1, beat2, properties) {
     if (properties) {
         for (const note of diffJSON.colorNotes) {
-            if (note.b >= beat1 && note.b <= beat2){
+            if (note.b >= beat1 && note.b <= beat2) {
                 note.customData = properties
             }
         }
@@ -84,10 +135,8 @@ export function animateNoteInBetween(diffJSON, beat1, beat2, properties) {
  * Animates a track
  * @param {animateTrackProperties} properties
  */
-export function animateTrack(diffJSON, properties) {
+export function animateTrack(properties) {
     if (diffJSON && properties) {
-        diffJSON.customData = {}
-        diffJSON.customData.customEvents = []
         const b = properties.beat
         const t = "AnimateTrack"
         const d = {
@@ -103,7 +152,28 @@ export function animateTrack(diffJSON, properties) {
             t,
             d,
         }
-        
+
         diffJSON.customData.customEvents.push(newProperties)
     }
+}
+
+/**
+ * Writes the custom data to the file you have set with modmapper.setDifficulty
+ */
+export function writeToFile() {
+    fileExists(difficulty).then((found) => {
+        if (diffJSON && found) {
+            console.log(colors.yellow, `[WARNING] writing to ${difficulty}...`, colors.reset)
+            fs.writeFileSync(
+                difficulty,
+                JSON.stringify(diffJSON, null, 4)
+            );
+
+            console.log(colors.green, "[OK] Succesfully written to " + difficulty, colors.reset)
+        }
+        else {
+            console.log(colors.red, `[ERROR] Error writing to ${difficulty}, did you set the correct difficulty name?`, colors.reset)
+            return
+        }
+    })
 }
