@@ -54,6 +54,7 @@ export async function setDifficulty(diff) {
         diffJSON.basicBeatmapEvents.forEach(event => {
             delete event.customData
         })
+        diffJSON.customData.materials = {}
     }
     else {
         console.log(colors.magenta, `[CRITICAL] Could not find ${difficulty} in the current directonary`, colors.reset)
@@ -219,6 +220,7 @@ export function modifyEnvironment(properties) {
  * @property {any} [color] - What color should the light be? You can set this is chromapper or manually do it here. Look at the wiki on how you should input colors.
  * @property {string} [easing] - What easing style should the light event have?
  * @property {string} [lerpType] - What lerping should the light even have? Either "RGB" or "HSV"
+ * @property {number} [type] - Type of lighting event
  */
 
 /**
@@ -231,15 +233,142 @@ export function editLightEvent(beat, properties) {
         diffJSON.basicBeatmapEvents.forEach(event => {
             if (event.b == beat) {
                 event.f = properties.brightness
+                event.et = properties.type
                 let newProperties = {
-                    lightID: properties.lightID,
                     color: properties.color,
+                    lightID: properties.lightID,
                     easing: properties.easing,
                     lerpType: properties.lerpType
                 }
                 event.customData = newProperties
             }
         })
+    }
+}
+
+// --- GEOMETRY ---
+/**
+ * @typedef {Object} materialProperties
+ * @property {String} name - What is the name of this material?
+ * @property {Array<number>} color - What color should the material have? This color will be the color of your geometry object.
+ * @property {string} track - What track should be assigned to the material? You can use the track to animate the color later on.
+ * @property {"Standard"|"Glowing"|"OpaqueLight"|"TransparentLight"|"BaseWater"|"BTSPillar"|"BillieWater"|"WaterfallMirror"|"InterscopeConcrete"|"InterscopeCar"} shader - What shader should the material have?
+ */
+
+/**
+ * Adds a material to the material that you can use on a geometry object. Geometry objects REQUIRE a material.
+ * @param {materialProperties} properties - What properties should the material have?
+ */
+export function addMaterial(properties) {
+    if (diffJSON && properties) {
+        diffJSON.customData.materials[properties.name] = {
+            color: properties.color,
+            shader: properties.shader,
+            track: properties.track
+        }
+    }
+}
+
+
+/**
+ * @typedef {object} geometryProperties
+ * @property {number} [id] - What ID should be assigned to the object?
+ * @property {number} [duplicate] - How many duplicates should be made? Don't defind to modify the original.
+ * @property {LookupMethod} [lookupMethod] - How should the game search for the object?
+ * @property {track} [track] - What track should be assigned to the  object?
+ * @property {Array<number>} [position] - Where should the object be positioned?
+ * @property {Array<number>} [rotation] - How should the object be rotated?
+ * @property {Array<number>} [localPosition] - How should the object be positioned relative to its set position?
+ * @property {Array<number>} [localRotation] - How should the object be rotated relative to its set rotation?
+ * @property {Array<number>} [scale] - How big should the material be?
+ * @property {{
+ *      type: string
+ *      material: {
+ *          color: Array<number>
+ *          shader: string
+ *      }
+ * }} geometry - Defind the shape and set the material of the object. Shapes: Sphere, Capsule, Plane, Cylinder, Cube, Quad, Triangle.
+ * @property {{
+ *      ILightWithId: {
+ *          lightID: number
+ *          type: number
+ *      }
+ * }} components - Set the lighting stuff (WIP)
+ */
+
+/**
+ * Make a new geometry object.
+ * @param {geometryProperties} properties - What properties does the object have?
+ */
+export function addGeometry(properties) {
+    if (diffJSON && properties) {
+        let newProperties = {
+            id: properties.id,
+            lookupMethod: properties.lookupMethod,
+            components: properties.components,
+            duplicate: properties.duplicate,
+            geometry: properties.geometry,
+            position: properties.position,
+            track: properties.track,
+            rotation: properties.rotation,
+            localPosition: properties.localPosition,
+            localRotation: properties.localRotation,
+            scale: properties.scale
+        }
+
+
+        diffJSON.customData.environment.push(newProperties)
+    }
+}
+
+// --- BLENDER ---
+/**
+ * @typedef {Object} rmmodelProperties
+ * @property {Array<number>} position
+ * @property {Array<number>} rotation
+ * @property {Array<number>} scale
+ */
+
+/**
+ * Used to import blender stuff in beat saber
+ * @param {any} rmmodelName - Name of the file. <YOUR_FILE_NAME>.rmmodel
+ * @param {rmmodelProperties} properties - Some properties you can set.
+ */
+export function blenderImport(rmmodelName, properties) {
+    if (diffJSON && fileExists(rmmodelName)) {
+        const data = fs.readFileSync(rmmodelName, "utf-8")
+        const rmmodelJSON = JSON.parse(data)
+        if (rmmodelJSON.objects) {
+            rmmodelJSON.objects.forEach((object) => {
+
+                if (!properties.position) {
+                    properties.position = [0, 0, 0]
+                }
+                if (!properties.rotation) {
+                    properties.rotation = [0, 0, 0]
+                }
+                if (!properties.scale) {
+                    properties.scale = [1, 1, 1]
+                }
+                if (!properties.material) {
+                    properties.material = {
+                        material: {
+                            color: [1, 1, 1],
+                            shader: "WaterfallMirror"
+                        }
+                    }
+                }
+                addGeometry({
+                    geometry: {
+                        type: "Cube",
+                        material: properties.material
+                    },
+                    position: object.position.map((v, i) => v + properties.position[i]),
+                    rotation: object.rotation.map((v, i) => v + properties.rotation[i]),
+                    scale: object.scale.map((v, i) => v + properties.scale[i]),
+                })
+            })
+        }
     }
 }
 
