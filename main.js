@@ -1,6 +1,8 @@
 // I GOT A LOT OF USEFUL INFORMATION FROM https://heck.aeroluna.dev/ THEY HELPED ME A TON!!!
 
 import fs from 'node:fs'
+import { json } from 'node:stream/consumers';
+import { diff } from 'node:util';
 
 const colors = {
     reset: "\x1b[0m",
@@ -55,6 +57,7 @@ export async function setDifficulty(diff) {
             delete event.customData
         })
         diffJSON.customData.materials = {}
+        diffJSON.basicBeatmapEvents = []
     }
     else {
         console.log(colors.magenta, `[CRITICAL] Could not find ${difficulty} in the current directonary`, colors.reset)
@@ -136,7 +139,6 @@ export function animateNoteInBetween(beat1, beat2, properties) {
  *      dissolve?: [][]
  *      dissolveArrow?: [][]
  *      scale?: [][]
- *      easing?: string
  * }} animation
  */
 
@@ -220,18 +222,109 @@ export function modifyEnvironment(properties) {
  * @property {any} [color] - What color should the light be? You can set this is chromapper or manually do it here. Look at the wiki on how you should input colors.
  * @property {string} [easing] - What easing style should the light event have?
  * @property {string} [lerpType] - What lerping should the light even have? Either "RGB" or "HSV"
- * @property {number} [type] - Type of lighting event
+ * @property {number} [type] - Type of lighting event. 0 = off, 1 = on, 2 = flash, 3 = fade, 4 = transition.I think idk 67420
+ * @property {number} [eventLane] - What should the event type be? (What lane?)
  */
 
 /**
- * Used to edit a light event at a certain beat, recommended to use with a for loop.
+ * 
+ * @param {number} beat - What beat should the new light event be placed at?
+ * @param {lightEventProperties} properties - properties n' stuff
+ */
+export function addLightEvent(beat, properties) {
+    if (diffJSON && properties) {
+        let newLightEvent = {
+            b: beat,
+            i: properties.type,
+            et: properties.eventLane,
+            f: properties.brightness,
+            customData: {
+                color: properties.color,
+                easing: properties.easing,
+                lightID: properties.lightID,
+                lerpType: properties.lerpType
+            }
+        }
+        diffJSON.basicBeatmapEvents.push(newLightEvent)
+    }
+}
+
+/**
+ * 
+ * @param {number} beat - Where should the light event start?
+ * @param {number} step How many beats are skipped before place the next one?
+ * @param {number} amount How many light events should be place?
+ * @param {lightEventProperties} properties - 6742069 brr brr patapiem
+ */
+export function addLightEventInBetween(beat, step, amount, properties) {
+    if (beat || beat == 0) {
+        if (diffJSON && step && amount && properties) {
+            const end = (step * amount) + beat
+            for (let start = beat; start <= end; start += step) {
+                addLightEvent(start, {
+                    brightness: properties.brightness,
+                    color: properties.color,
+                    easing: properties.easing,
+                    eventLane: properties.eventLane,
+                    lerpType: properties.lerpType,
+                    type: properties.type,
+                    lightID: properties.lightID
+                })
+            }
+        }
+    }
+}
+
+/**
+ * Used to edit a light event at a certain beat, recommended to use with a for loop or with modmapper.getlightinbetween().foreach().
  * @param {number} beat - At what beat should the light even take place?
  * @param {lightEventProperties} properties - What properties should the light event have?
+ * @param {number} [et] - What lane does the event have to be in?
  */
-export function editLightEvent(beat, properties) {
+export function editLightEvent(beat, properties, et) {
     if (diffJSON && properties) {
         diffJSON.basicBeatmapEvents.forEach(event => {
-            if (event.b == beat) {
+            if (!et && et != 0) {
+                if (event.b == beat) {
+                    event.i = properties.type ?? event.i
+                    event.f = properties.brightness ?? event.f
+                    event.et = properties.eventLane ?? event.et
+                    event.customData = {
+                        color: properties.color,
+                        lightID: properties.lightID,
+                        easing: properties.easing,
+                        lerpType: properties.lerpType
+                    }
+                }
+            }
+            else if (et || et == 0) {
+                if (event.b == beat && event.et == et) {
+                    event.i = properties.type ?? event.i
+                    event.f = properties.brightness ?? event.f
+                    event.et = properties.eventLane ?? event.et
+                    event.customData = {
+                        color: properties.color,
+                        lightID: properties.lightID,
+                        easing: properties.easing,
+                        lerpType: properties.lerpType
+                    }
+                }
+            }
+        })
+    }
+}
+
+/**
+ * Allows you to edit light events in between 2 beats(INVLUSIVE)
+ * @param {number} beat1 - INCLUSIVE start beat
+ * @param {number} beat2 - INCLUSIVE end beat
+ * @param {lightEventProperties} properties - Some properties stuff idk lolol 67
+ */
+export function editLightEventInBetween(beat1, beat2, properties) {
+    if (diffJSON && properties && beat1 && beat2) {
+        diffJSON.basicBeatmapEvents.forEach((event) => {
+            if (event.b >= beat1 && event.b <= beat2) {
+                event.i = properties.eventType
                 event.f = properties.brightness
                 event.et = properties.type
                 let newProperties = {
@@ -243,6 +336,34 @@ export function editLightEvent(beat, properties) {
                 event.customData = newProperties
             }
         })
+    }
+}
+
+/**
+ * Returns all of the data of the light event on the given beat.
+ * @param {number} beat - What beat is the light event located at?
+ */
+export function getLightEvent(beat) {
+    if (diffJSON && beat || diffJSON && beat == 0) {
+        const result = diffJSON.basicBeatmapEvents.find(event => event.b === beat)
+        return diffJSON.basicBeatmapEvents.find(event => event.b === beat)
+    }
+}
+
+/**
+ * Returns all of the data of the light event on the given beat.
+ * @param {number} beat - What beat is the light event located at?
+ */
+export function getLightEventInBetween(beat1, beat2) {
+    const events = []
+    if (diffJSON && beat1 && beat2 || diffJSON && beat1 == 0 && beat2) {
+        diffJSON.basicBeatmapEvents.forEach((event) => {
+            if (event.b >= beat1 && event.b <= beat2) {
+                events.push(event)
+            }
+        })
+
+        return events
     }
 }
 
@@ -327,6 +448,7 @@ export function addGeometry(properties) {
  * @property {Array<number>} position
  * @property {Array<number>} rotation
  * @property {Array<number>} scale
+ * @property {string} track
  */
 
 /**
@@ -366,10 +488,28 @@ export function blenderImport(rmmodelName, properties) {
                     position: object.position.map((v, i) => v + properties.position[i]),
                     rotation: object.rotation.map((v, i) => v + properties.rotation[i]),
                     scale: object.scale.map((v, i) => v + properties.scale[i]),
+                    track: properties.track
                 })
             })
         }
     }
+}
+
+// --- TOOLS ---
+/**
+ * Used to calculate the amount of events you need to stop at the end beat
+ * @param {number} beat - Starting beat
+ * @param {number} step Step between beats
+ * @param {number} endBeat Ending beat
+ * @returns The calculated amount of events you need to stop at the end beat
+ */
+export function calculateAmount(beat, step, endBeat) {
+    if (beat || beat == 0) {
+        if (step, endBeat) {
+            return (endBeat - beat) / step
+        }
+    }
+
 }
 
 // --- WRITING TO FILE ---
