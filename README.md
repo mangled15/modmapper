@@ -34,7 +34,7 @@ Will add way more in the future(maybe). Wiki will also come
 ---
 # Template: 
 ``` javascript
-import * as modmapper from "./main.js"
+import * as modmapper from "modmapper.js"
 await modmapper.setDifficulty("ExpertPlusStandard.dat") // Make sure this matches the name of the diff you want to mod EXACTLY
 
 // VVV code VVV
