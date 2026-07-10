@@ -1,8 +1,6 @@
 // I GOT A LOT OF USEFUL INFORMATION FROM https://heck.aeroluna.dev/ THEY HELPED ME A TON!!!
 
 import fs from 'node:fs'
-import { json } from 'node:stream/consumers';
-import { diff } from 'node:util';
 
 const colors = {
     reset: "\x1b[0m",
@@ -456,15 +454,23 @@ export function addGeometry(properties) {
  * @param {any} rmmodelName - Name of the file. <YOUR_FILE_NAME>.rmmodel
  * @param {rmmodelProperties} properties - Some properties you can set.
  */
-export function blenderImport(rmmodelName, properties) {
+let takenModelNumberTracks = []
+export function blenderImport(beat, endBeat, rmmodelName, properties) {
     if (diffJSON && fileExists(rmmodelName)) {
+        let t = 0
+        while (takenModelNumberTracks.includes(t)) {
+            t++;
+        }
         const data = fs.readFileSync(rmmodelName, "utf-8")
         const rmmodelJSON = JSON.parse(data)
         if (rmmodelJSON.objects) {
+            const underWorld = 999999999
+            properties.position[0] = properties.position[0]
+            properties.position[1] = properties.position[1] - underWorld
+            properties.position[2] = properties.position[2]
             rmmodelJSON.objects.forEach((object) => {
-
                 if (!properties.position) {
-                    properties.position = [0, 0, 0]
+                    properties.position = [0, -underWorld, 0]
                 }
                 if (!properties.rotation) {
                     properties.rotation = [0, 0, 0]
@@ -475,11 +481,14 @@ export function blenderImport(rmmodelName, properties) {
                 if (!properties.material) {
                     properties.material = {
                         material: {
-                            color: [1, 1, 1],
-                            shader: "WaterfallMirror"
+                            color: [0, 1, 0, 0.5],
+                            shader: "BaseWater" // TransparentLight, Standard??
                         }
                     }
                 }
+
+                const finalPos = object.position.map((v, i) => v + properties.position[i])
+
                 addGeometry({
                     geometry: {
                         type: "Cube",
@@ -488,8 +497,30 @@ export function blenderImport(rmmodelName, properties) {
                     position: object.position.map((v, i) => v + properties.position[i]),
                     rotation: object.rotation.map((v, i) => v + properties.rotation[i]),
                     scale: object.scale.map((v, i) => v + properties.scale[i]),
-                    track: properties.track
+                    track: `[${t}]ModMapperObjectTrack`
                 })
+                animateTrack({
+                    track: `[${t}]ModMapperObjectTrack`,
+                    duration: 1,
+                    beat: beat,
+                    animation: {
+                        position: [
+                            [finalPos[0], finalPos[1] + underWorld, finalPos[2], 0]
+                        ]
+                    }
+                })
+                animateTrack({
+                    track: `[${t}]ModMapperObjectTrack`,
+                    duration: 1,
+                    beat: endBeat,
+                    animation: {
+                        position: [
+                            [finalPos[0], finalPos[1], finalPos[2], 0]
+                        ]
+                    }
+                })
+                takenModelNumberTracks.push(t)
+                t++;
             })
         }
     }
@@ -510,6 +541,10 @@ export function calculateAmount(beat, step, endBeat) {
         }
     }
 
+}
+
+export function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
 // --- WRITING TO FILE ---
