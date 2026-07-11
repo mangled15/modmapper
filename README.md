@@ -1,48 +1,20 @@
-# modmapper
-A library I'm making to simplify making modcharts in beat saber.
+# Modmapper
+A library to simplify making modcharts in beat saber.
+
+---
+# General information
+## Why?
+To be completely honest the reason I made this is because when I used [Swifters](https://github.com/swifter1243) framework called [ReMapper](https://github.com/Swifter1243/ReMapper) I was really frustrated with home complicated it was and how little sense it made to me. It is centeinly a skill issue I know but then I thought: *Fuck it I'm going to make it easy to make a modchart.* So I did
+## How?
+It is really simple to be honest, it is just a big JavaScript file that is being loaded in the user's dictionary that exports a bunch of functions that translate normal input into valid `v3` map `JSON` data. I found out that I could use npm to let people to install it globally and it is pretty easy since you only need [git](https://git-scm.com/) and [node](https://nodejs.org/en) to do so.
+## Want to try modmapper for yourself?
+I don't recommend using it at the moment since it is still in **really really** early development but if you really want to you should check out the [wiki](https://github.com/mangled15/modmapper/wiki) on how to get started! :D
 
 ---
 
-Only single diff supported atm
-
----
-# How to use
-### Make sure you have [Node](https://nodejs.org/en/download) installed and you can run `npm -v` in the terminal
-
-- Open VSCode in the directory of your map, then in a terminal window run 
-```bash
-npm install github:mangled15/modmapper
-```
-and wait for it to install.
-
-- Then create a new file with a .js extension
-
-- Paste the template and start coding :)
-
-- Run the file by running: 
-```bash
-node <YOUR-FILE-NAME>.js
-```
-in the terminal.
-
-- If you get an error about some module you need to create a new file in the same directionary called `package.json` and paste the contents of modmapper's [package.json](https://github.com/mangled15/modmapper/blob/main/package.json)
-
-- If you get any more errors or need help dm me but I have to set allis up which is going to take a while.
-
-Will add way more in the future(maybe). Wiki will also come
-
----
-# Template: 
-``` javascript
-import * as modmapper from "modmapper.js"
-await modmapper.setDifficulty("ExpertPlusStandard.dat") // Make sure this matches the name of the diff you want to mod EXACTLY
-
-// VVV code VVV
+This library is completely owned and maintained by [mangled15](https://github.com/mangled15).
 
 
+Discord: [mangled15](https://discord.com/users/897849927986712637)
 
-// ^^^ code ^^^
-
-// Make sure you run this function AFTER your code else it won't pick it up. And if you don't run this function then well it doesn't write any custom data (duhhh!)
-modmapper.writeToFile()
-```
+I, mangled15, am not associated with Swifter, BSMG or anyone at all that is mentioned. They do not not this exist nor do they care.
