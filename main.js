@@ -1,5 +1,6 @@
 // I GOT A LOT OF USEFUL INFORMATION FROM https://heck.aeroluna.dev/ THEY HELPED ME A TON!!!
 
+import { info } from 'node:console';
 import fs from 'node:fs'
 
 const colors = {
@@ -33,6 +34,8 @@ let difficulty
 let data
 let diffJSON
 
+let infoJSON
+let nameOfInfo
 /**
  * 
  * @param {string} diff - Pass in the name of the difficulty you want to edit with modmapper 
@@ -60,6 +63,93 @@ export async function setDifficulty(diff) {
     else {
         console.log(colors.magenta, `[CRITICAL] Could not find ${difficulty} in the current directonary`, colors.reset)
         return;
+    }
+}
+
+/**
+ * @typedef {Object} PlayerOptions
+ * @property {boolean} [_reduceDebris]
+ * @property {boolean} [_noTextsAndHuds]
+ * @property {boolean} [_noFailEffects]
+ * @property {boolean} [_advancedHud]
+ * @property {boolean} [_autoRestart]
+ * @property {number} [_saberTrailIntensity]
+ * @property {boolean} [_hideNoteSpawnEffect]
+ * @property {boolean} [_adaptiveSfx]
+ * @property {"AllEffects"|"StrobeFilter"|"NoEffects"} [_environmentEffectsFilterDefaultPreset]
+ * @property {"AllEffects"|"StrobeFilter"|"NoEffects"} [_environmentEffectsFilterExpertPlusPreset]
+ */
+
+/**
+ * @typedef {Object} Environments
+ * @property {boolean} [_overrideEnvironments] - Turn Environment override on or off.
+ */
+
+/**
+ * @typedef {Object} GraphicsSettings
+ * @property {number} [_mirrorGraphicsSettings] - Set the quality of the mirror. 0-3 0 being off and 3 being highest.
+ * @property {boolean} [_mainEffectGraphicsSettings] - Turn on or off Bloom Post Process
+ * @property {number} [_smokeGraphicsSettings] - Enable or disable the smoke effect. 0 being off and 1 being on.
+ * @property {boolean} [_burnMarkTrailsEnabled] - Hidden setting: Hides burn trails left by sabers.
+ * @property {boolean} [_screenDisplacementEffectsEnabled] - Enable or disable screen distortion effects.
+ * @property {number} [_maxShockwaveParticles] - Sets the max shockwave particles. 0-2
+ */
+
+/**
+ * @typedef {Object} Settings
+ * @property {PlayerOptions} [_playerOptions]
+ * @property {Environments} [environments]
+ * @property {GraphicsSettings} [graphics]
+ */
+
+/**
+ * @typedef {Object} requirements
+ * @property {(
+ *      "Noodle Extensions" |
+ *      "Chroma" |
+ *      "Mapping Extensions"
+ * )[]} [requirements]
+ * @property {*} [Chroma]
+ */
+
+/**
+ * @typedef {Object} infoProperties
+ * @property {"DefaultEnvironment"|"BigMirrorEnvironment"|"TriangleEnvironment"|"NiceEnvironment"|"KDAEnvironment"|"MonstercatEnvironment"|"DragonsEnvironment"|"OriginsEnvironment"|"CrabRaveEnvironment"|"PanicEnvironment"|"RocketEnvironment"|"GreenDayEnvironment"|"TimbalandEnvironment"|"FitBeatEnvironment"|"LinkinParkEnvironment"|"BTSEnvironment"|"BillieEnvironment"|"GagaEnvironment"} [environment] - What environment should the beat map use? This overwrite is disabled if the player has environment override turned on.
+ * @property {string} [difficultyLabel] - What is the name of the diff? Example: from "Expert+" to "Brr brr patapiem"
+ * @property {string} [warnings] - Warn the user about certein things.
+ * @property {string} [information] - Say something the user should know :3
+ * @property {Settings} [settings] - Allows you to suggest settings when starting the map.
+ * @property {any} [requirements] - HAS TO BE A ARRAY. Set the requirements of the map. "Chroma", "Noodle Extensions", "Mapping Exensions".
+ */
+
+/**
+ * Allows you to set information about the beat map. Documentation: https://heck.aeroluna.dev/settings/
+ * @param {string} file - Info.dat is the default, you should not have to change it from the template.
+ * @param {infoProperties} properties Information you can set for the map
+ */
+export async function setInformation(file, properties) {
+    if (fileExists(file) && properties) {
+        nameOfInfo = file
+        data = fs.readFileSync(file, "utf-8")
+        infoJSON = JSON.parse(data)
+        if (properties.environment) {
+            infoJSON._environmentName = properties.environment
+            infoJSON._environmentNames = [properties.environment]
+        }
+        if (infoJSON._difficultyBeatmapSets[0]._difficultyBeatmaps) {
+            let mapsArr = infoJSON._difficultyBeatmapSets[0]._difficultyBeatmaps
+            for (let i = 0; i < mapsArr.length; i++) {
+                mapsArr[0]._customData = {
+                    _settings: properties.settings,
+                    _difficultyLabel: properties.difficultyLabel,
+                    _warnings: properties.warnings,
+                    _information: properties.information,
+                    // _playerOptions: properties.playerOptions,
+                    _graphics: properties.graphics,
+                    _requirements: properties.requirements
+                }
+            }
+        }
     }
 }
 
@@ -442,19 +532,29 @@ export function addGeometry(properties) {
 
 // --- BLENDER ---
 /**
+ * @typedef {Object} blenderMaterialProperties
+ * @property {"Standard"|"Glowing"|"OpaqueLight"|"TransparentLight"|"BaseWater"|"BTSPillar"|"BillieWater"|"WaterfallMirror"|"InterscopeConcrete"|"InterscopeCar"} shader - What shader should the model have?
+ * @property {Array<number>} color - What color is the material?
+ */
+
+/**
  * @typedef {Object} rmmodelProperties
  * @property {Array<number>} position
  * @property {Array<number>} rotation
  * @property {Array<number>} scale
  * @property {string} track
+ * @property {blenderMaterialProperties} material
  */
+
+let takenModelNumberTracks = []
 
 /**
  * Used to import blender stuff in beat saber
+ * @param {number} beat - At what beat should the model be loaded in?
+ * @param {number} endBeat - At what beat should the model be unloaded?
  * @param {any} rmmodelName - Name of the file. <YOUR_FILE_NAME>.rmmodel
  * @param {rmmodelProperties} properties - Some properties you can set.
  */
-let takenModelNumberTracks = []
 export function blenderImport(beat, endBeat, rmmodelName, properties) {
     if (diffJSON && fileExists(rmmodelName)) {
         let t = 0
@@ -465,12 +565,13 @@ export function blenderImport(beat, endBeat, rmmodelName, properties) {
         const rmmodelJSON = JSON.parse(data)
         if (rmmodelJSON.objects) {
             const underWorld = 999999999
-            properties.position[0] = properties.position[0]
-            properties.position[1] = properties.position[1] - underWorld
-            properties.position[2] = properties.position[2]
             rmmodelJSON.objects.forEach((object) => {
                 if (!properties.position) {
                     properties.position = [0, -underWorld, 0]
+                } else {
+                    properties.position[0] = properties.position[0]
+                    properties.position[1] = properties.position[1] - underWorld
+                    properties.position[2] = properties.position[2]
                 }
                 if (!properties.rotation) {
                     properties.rotation = [0, 0, 0]
@@ -482,7 +583,7 @@ export function blenderImport(beat, endBeat, rmmodelName, properties) {
                     properties.material = {
                         material: {
                             color: [0, 1, 0, 0.5],
-                            shader: "BaseWater" // TransparentLight, Standard??
+                            shader: "Standard" // TransparentLight, Standard??
                         }
                     }
                 }
@@ -550,7 +651,7 @@ export function randomInt(min, max) {
 // --- WRITING TO FILE ---
 
 /**
- * Writes the custom data to the file you have set with modmapper.setDifficulty
+ * Writes the custom data to the file you have set with modmapper.setDifficulty. Also writes the custom information to info.dat.
  */
 export function writeToFile() {
     if (diffJSON) {
@@ -559,7 +660,15 @@ export function writeToFile() {
             difficulty,
             JSON.stringify(diffJSON, null, 4)
         );
-        console.log(colors.green, "[OK] Succesfully written to " + difficulty, colors.reset)
+        if (nameOfInfo) {
+            console.log(colors.yellow, `[WARNING] writing to ${nameOfInfo}...`, colors.reset)
+            fs.writeFileSync(
+                nameOfInfo,
+                JSON.stringify(infoJSON, null, 4)
+            );
+            console.log(colors.green, `[OK] Succesfully written to ${nameOfInfo}`, colors.reset)
+        }
+        console.log(colors.green, `[OK] Succesfully written to ${difficulty}`, colors.reset)
     }
     else {
         console.log(colors.red, `[ERROR] Error writing to ${difficulty}, did you set the correct difficulty name?`, colors.reset)
